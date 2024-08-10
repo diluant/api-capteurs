@@ -1,21 +1,32 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const db = require('./database');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
+// Endpoint to receive sensor data and store it in the database
 app.post('/api/sensor-data', (req, res) => {
     const { x, y, z, latitude, longitude, speed } = req.body;
-    
-    console.log(`Accélération: x=${x}, y=${y}, z=${z}`);
-    console.log(`Position: latitude=${latitude}, longitude=${longitude}`);
-    console.log(`Vitesse: ${speed} km/h`);
 
-    res.status(200).json({ message: 'Données reçues avec succès' });
+    const query = `
+        INSERT INTO sensor_data (x, y, z, latitude, longitude, speed)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    
+    db.run(query, [x, y, z, latitude, longitude, speed], function(err) {
+        if (err) {
+            console.error(err.message);
+            res.status(500).json({ error: 'Failed to store data in the database' });
+            return;
+        }
+        res.status(200).json({ message: 'Data stored successfully', id: this.lastID });
+    });
 });
 
+// Start the server
 app.listen(port, () => {
-    console.log(`API en écoute sur http://localhost:${port}`);
+    console.log(`API listening at http://localhost:${port}`);
 });
