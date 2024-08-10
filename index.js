@@ -26,6 +26,20 @@ app.post('/api/sensor-data', (req, res) => {
     });
 });
 
+// New GET endpoint to retrieve data
+app.get('/api/sensor-data', (req, res) => {
+    const query = `SELECT * FROM sensor_data ORDER BY timestamp DESC`;
+
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            console.error(err.message);
+            res.status(500).json({ error: 'Failed to retrieve data from the database' });
+            return;
+        }
+        res.status(200).json(rows);
+    });
+});
+
 // Start the server
 app.listen(port, () => {
     console.log(`API listening at http://localhost:${port}`);
