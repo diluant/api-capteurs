@@ -1,13 +1,15 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');  // Add this line
 const db = require('./database');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(cors());  // Add this line
 app.use(bodyParser.json());
 
-// Endpoint to receive sensor data and store it in the database
+// Existing POST endpoint to store data
 app.post('/api/sensor-data', (req, res) => {
     const { x, y, z, latitude, longitude, speed } = req.body;
 
