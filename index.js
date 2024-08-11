@@ -9,6 +9,7 @@ const port = process.env.PORT || 3000;
 app.use(cors());  // Add this line
 app.use(bodyParser.json());
 
+// POST existant pour stocker les données
 // Existing POST endpoint to store data
 app.post('/api/sensor-data', (req, res) => {
     const { x, y, z, latitude, longitude, speed } = req.body;
@@ -28,6 +29,7 @@ app.post('/api/sensor-data', (req, res) => {
     });
 });
 
+// Nouveau GET pour recueillir les données
 // New GET endpoint to retrieve data
 app.get('/api/sensor-data', (req, res) => {
     const query = `SELECT * FROM sensor_data ORDER BY timestamp DESC`;
@@ -42,6 +44,7 @@ app.get('/api/sensor-data', (req, res) => {
     });
 });
 
+// Démarrer le serveur
 // Start the server
 app.listen(port, () => {
     console.log(`API listening at http://localhost:${port}`);
