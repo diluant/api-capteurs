@@ -13,3 +13,38 @@
     "sqlite3": "^5.0.0"
   }
 }
+
+{
+  "name": "api-capteurs",
+  "version": "1.0.0",
+  "description": "API pour la gestion des données de capteurs avec Node.js et MongoDB",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "mongoose": "^5.10.9",
+    "body-parser": "^1.19.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/diluant/api-capteurs.git"
+  },
+  "keywords": [
+    "node.js",
+    "api",
+    "sensors",
+    "mongodb",
+    "express"
+  ],
+  "author": "Steve Morin",
+  "license": "MIT"
+}
