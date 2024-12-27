@@ -1,23 +1,7 @@
 {
   "name": "api-capteurs",
   "version": "1.0.0",
-  "description": "Simple API pour enregistrer des coordonnées d'accélération",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "body-parser": "^1.19.0",
-    "cors": "^2.8.5",
-    "express": "^4.17.1",
-    "sqlite3": "^5.0.0"
-  }
-}
-
-{
-  "name": "api-capteurs",
-  "version": "1.0.0",
-  "description": "API pour la gestion des données de capteurs avec Node.js et MongoDB",
+  "description": "API pour la gestion des données de capteurs avec Node.js et SQLite",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -25,14 +9,18 @@
   },
   "dependencies": {
     "express": "^4.17.1",
-    "mongoose": "^5.10.9",
-    "body-parser": "^1.19.0"
+    "body-parser": "^1.19.0",
+    "sqlite3": "^5.0.0",
+    "cors": "^2.8.5",
+    "helmet": "^6.0.0",
+    "express-rate-limit": "^7.0.0",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
     "nodemon": "^2.0.7"
   },
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=14.0.0"
   },
   "repository": {
     "type": "git",
@@ -42,8 +30,9 @@
     "node.js",
     "api",
     "sensors",
-    "mongodb",
-    "express"
+    "sqlite",
+    "express",
+    "security"
   ],
   "author": "Steve Morin",
   "license": "MIT"
