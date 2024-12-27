@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const db = require('./database'); // Fichier pour gérer la base de données
+const { Coordonnee, Trajet } = require('./models'); // Importer les modèles
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,61 +21,62 @@ app.use(rateLimit({
 app.use(cors());
 app.use(bodyParser.json());
 
-// Initialisation de la base de données
-db.serialize(() => {
-    db.run(`
-        CREATE TABLE IF NOT EXISTS sensor_data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            x REAL,
-            y REAL,
-            z REAL,
-            latitude REAL,
-            longitude REAL,
-            speed REAL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `, (err) => {
-        if (err) {
-            console.error("Erreur lors de l'initialisation de la base de données :", err.message);
-        } else {
-            console.log("Base de données initialisée avec succès.");
-        }
-    });
-});
-
-// POST pour stocker les données
-app.post('/api/sensor-data', (req, res) => {
+// POST pour sauvegarder une coordonnée
+app.post('/api/sensor-data', async (req, res) => {
     const { x, y, z, latitude, longitude, speed } = req.body;
 
     if (x == null || y == null || z == null || latitude == null || longitude == null || speed == null) {
         return res.status(400).json({ error: 'Tous les champs sont obligatoires' });
     }
 
-    const query = `
-        INSERT INTO sensor_data (x, y, z, latitude, longitude, speed)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `;
-
-    db.run(query, [x, y, z, latitude, longitude, speed], function(err) {
-        if (err) {
-            console.error("Erreur lors de l'insertion :", err.message);
-            return res.status(500).json({ error: 'Échec de l’enregistrement des données' });
-        }
-        res.status(200).json({ message: 'Données enregistrées avec succès', id: this.lastID });
-    });
+    try {
+        const coordonnee = new Coordonnee(x, y, z, latitude, longitude, speed);
+        const savedCoord = await coordonnee.save();
+        res.status(200).json({ message: 'Coordonnée enregistrée avec succès', data: savedCoord });
+    } catch (err) {
+        console.error("Erreur lors de l'enregistrement :", err.message);
+        res.status(500).json({ error: 'Erreur lors de l’enregistrement des données' });
+    }
 });
 
-// GET pour récupérer les données
-app.get('/api/sensor-data', (req, res) => {
-    const query = `SELECT * FROM sensor_data ORDER BY timestamp DESC`;
+// GET pour récupérer toutes les coordonnées
+app.get('/api/sensor-data', async (req, res) => {
+    try {
+        const coordinates = await Coordonnee.getAll();
+        res.status(200).json(coordinates);
+    } catch (err) {
+        console.error("Erreur lors de la récupération :", err.message);
+        res.status(500).json({ error: 'Erreur lors de la récupération des données' });
+    }
+});
 
-    db.all(query, [], (err, rows) => {
-        if (err) {
-            console.error("Erreur lors de la récupération des données :", err.message);
-            return res.status(500).json({ error: 'Échec de la récupération des données' });
-        }
-        res.status(200).json(rows);
-    });
+// POST pour créer un trajet
+app.post('/api/trajets', async (req, res) => {
+    const { name } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ error: 'Le nom du trajet est obligatoire' });
+    }
+
+    try {
+        const trajet = new Trajet(null, name);
+        const savedTrajet = await trajet.save();
+        res.status(200).json({ message: 'Trajet créé avec succès', data: savedTrajet });
+    } catch (err) {
+        console.error("Erreur lors de la création du trajet :", err.message);
+        res.status(500).json({ error: 'Erreur lors de la création du trajet' });
+    }
+});
+
+// GET pour récupérer tous les trajets
+app.get('/api/trajets', async (req, res) => {
+    try {
+        const trajets = await Trajet.getAll();
+        res.status(200).json(trajets);
+    } catch (err) {
+        console.error("Erreur lors de la récupération des trajets :", err.message);
+        res.status(500).json({ error: 'Erreur lors de la récupération des trajets' });
+    }
 });
 
 // Serveur en écoute
