@@ -79,6 +79,10 @@ app.get('/api/trajets', async (req, res) => {
     }
 });
 
+app.get('/', (req, res) => {
+    res.send('Bienvenue à l\'API des capteurs ! Utilisez les endpoints /api/sensor-data ou /api/trajets.');
+});
+
 // Serveur en écoute
 app.listen(port, () => {
     console.log(`API en écoute sur http://localhost:${port}`);
