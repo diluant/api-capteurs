@@ -4,7 +4,7 @@
   "description": "API pour la gestion des données de capteurs avec Node.js et SQLite",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node init-db.js && node index.js",
     "dev": "nodemon index.js"
   },
   "dependencies": {
