@@ -1,4 +1,3 @@
-// Fichier : index.js
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -11,10 +10,8 @@ const { Coordonnee, Trajet } = require('./models');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configuration pour les proxys (Render ou autre)
 app.set('trust proxy', true);
 
-// Initialiser la base de données
 const db = new sqlite3.Database('./database.sqlite', (err) => {
     if (err) {
         console.error('Erreur lors de la connexion à SQLite:', err.message);
@@ -26,19 +23,16 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 Coordonnee.initialize(db);
 Trajet.initialize(db);
 
-// Middleware de sécurité
 app.use(helmet());
 app.use(rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limite à 100 requêtes par IP
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: "Trop de requêtes, réessayez plus tard."
 }));
 
-// Middleware pour CORS et parsing
 app.use(cors());
 app.use(bodyParser.json());
 
-// POST pour sauvegarder une coordonnée
 app.post('/api/sensor-data', async (req, res) => {
     const { x, y, z, latitude, longitude, speed } = req.body;
 
@@ -58,7 +52,6 @@ app.post('/api/sensor-data', async (req, res) => {
     }
 });
 
-// GET pour récupérer toutes les coordonnées
 app.get('/api/sensor-data', async (req, res) => {
     try {
         const coordinates = await Coordonnee.getAll();
@@ -70,7 +63,6 @@ app.get('/api/sensor-data', async (req, res) => {
     }
 });
 
-// POST pour créer un trajet
 app.post('/api/trajets', async (req, res) => {
     const { name } = req.body;
 
@@ -89,7 +81,6 @@ app.post('/api/trajets', async (req, res) => {
     }
 });
 
-// GET pour récupérer tous les trajets
 app.get('/api/trajets', async (req, res) => {
     try {
         const trajets = await Trajet.getAll();
@@ -105,7 +96,6 @@ app.get('/', (req, res) => {
     res.send('Bienvenue à l\'API des capteurs ! Utilisez les endpoints /api/sensor-data ou /api/trajets.');
 });
 
-// Serveur en écoute
 app.listen(port, () => {
     console.log(`API en écoute sur http://localhost:${port}`);
 });
