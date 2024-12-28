@@ -1,117 +1,120 @@
-
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
 
-// Connexion à la base de données SQLite
-const dbPath = process.env.DATABASE_PATH || path.resolve(__dirname, 'sensor_data.db');
-const db = new sqlite3.Database(dbPath);
-
-// Classe Coordonnee
 class Coordonnee {
-    constructor(x, y, z, latitude, longitude, speed, timestamp = new Date()) {
+    constructor(x, y, z, latitude, longitude, speed) {
         this.x = x;
         this.y = y;
         this.z = z;
         this.latitude = latitude;
         this.longitude = longitude;
         this.speed = speed;
-        this.timestamp = timestamp;
     }
 
-    // Méthode pour sauvegarder une coordonnée dans la base de données
+    static initialize(db) {
+        db.run(`
+            CREATE TABLE IF NOT EXISTS sensor_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                x REAL NOT NULL,
+                y REAL NOT NULL,
+                z REAL NOT NULL,
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL,
+                speed REAL NOT NULL
+            );
+        `, (err) => {
+            if (err) {
+                console.error("Erreur lors de la création de la table sensor_data:", err.message);
+            } else {
+                console.log("Table sensor_data prête.");
+            }
+        });
+    }
+
     save() {
         return new Promise((resolve, reject) => {
-            const query = `
-                INSERT INTO sensor_data (x, y, z, latitude, longitude, speed, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            `;
-            db.run(query, [this.x, this.y, this.z, this.latitude, this.longitude, this.speed, this.timestamp],
+            const db = new sqlite3.Database('./database.sqlite');
+            db.run(
+                `INSERT INTO sensor_data (x, y, z, latitude, longitude, speed) VALUES (?, ?, ?, ?, ?, ?)`,
+                [this.x, this.y, this.z, this.latitude, this.longitude, this.speed],
                 function (err) {
                     if (err) {
                         reject(err);
                     } else {
                         resolve({ id: this.lastID, ...this });
                     }
-                });
+                }
+            );
+            db.close();
         });
     }
 
-    // Méthode statique pour récupérer toutes les coordonnées
     static getAll() {
         return new Promise((resolve, reject) => {
-            const query = `SELECT * FROM sensor_data ORDER BY timestamp DESC`;
-            db.all(query, [], (err, rows) => {
+            const db = new sqlite3.Database('./database.sqlite');
+            db.all(`SELECT * FROM sensor_data`, [], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(rows.map(row => new Coordonnee(row.x, row.y, row.z, row.latitude, row.longitude, row.speed, row.timestamp)));
+                    resolve(rows);
                 }
             });
+            db.close();
         });
     }
 }
 
-// Classe Trajet
 class Trajet {
     constructor(id, name) {
         this.id = id;
         this.name = name;
-        this.coordinates = [];
     }
 
-    // Ajouter une coordonnée au trajet
-    addCoordonnee(coordonnee) {
-        this.coordinates.push(coordonnee);
+    static initialize(db) {
+        db.run(`
+            CREATE TABLE IF NOT EXISTS trajets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL
+            );
+        `, (err) => {
+            if (err) {
+                console.error("Erreur lors de la création de la table trajets:", err.message);
+            } else {
+                console.log("Table trajets prête.");
+            }
+        });
     }
 
-    // Sauvegarder le trajet dans la base de données
     save() {
         return new Promise((resolve, reject) => {
-            const query = `
-                INSERT INTO trajets (name) VALUES (?)
-            `;
-            db.run(query, [this.name], function (err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve({ id: this.lastID, name: this.name });
+            const db = new sqlite3.Database('./database.sqlite');
+            db.run(
+                `INSERT INTO trajets (name) VALUES (?)`,
+                [this.name],
+                function (err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve({ id: this.lastID, ...this });
+                    }
                 }
-            });
+            );
+            db.close();
         });
     }
 
-    // Méthode statique pour récupérer tous les trajets
     static getAll() {
         return new Promise((resolve, reject) => {
-            const query = `SELECT * FROM trajets`;
-            db.all(query, [], (err, rows) => {
+            const db = new sqlite3.Database('./database.sqlite');
+            db.all(`SELECT * FROM trajets`, [], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(rows.map(row => new Trajet(row.id, row.name)));
+                    resolve(rows);
                 }
             });
-        });
-    }
-
-    // Récupérer toutes les coordonnées associées à ce trajet
-    getCoordinates() {
-        return new Promise((resolve, reject) => {
-            const query = `
-                SELECT sensor_data.* FROM sensor_data
-                INNER JOIN trajet_coordinates ON sensor_data.id = trajet_coordinates.coordinate_id
-                WHERE trajet_coordinates.trajet_id = ?
-            `;
-            db.all(query, [this.id], (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    this.coordinates = rows.map(row => new Coordonnee(row.x, row.y, row.z, row.latitude, row.longitude, row.speed, row.timestamp));
-                    resolve(this.coordinates);
-                }
-            });
+            db.close();
         });
     }
 }
 
-module.exports = { Coordonnee, Trajet, db };
+module.exports = { Coordonnee, Trajet };
