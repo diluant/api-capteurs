@@ -8,7 +8,7 @@ const sqlite3 = require('sqlite3').verbose();
 const { Coordonnee, Trajet } = require('./models');
 
 const app = express();
-const port = process.env.PORT || 10000;
+const port = process.env.PORT || 3000;
 
 // Configuration pour les proxys (Render ou autre)
 app.set('trust proxy', true);
