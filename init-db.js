@@ -10,7 +10,6 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 
 // Initialiser les tables
 db.serialize(() => {
-    // Table trajets
     db.run(`
         CREATE TABLE IF NOT EXISTS trajets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,11 +21,10 @@ db.serialize(() => {
         if (err) {
             console.error("Erreur lors de la création de la table trajets:", err.message);
         } else {
-            console.log("Table trajets prête avec timestamps.");
+            console.log("Table trajets créée avec succès.");
         }
     });
 
-    // Table coordonnee
     db.run(`
         CREATE TABLE IF NOT EXISTS coordonnee (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +34,7 @@ db.serialize(() => {
             latitude REAL NOT NULL,
             longitude REAL NOT NULL,
             speed REAL NOT NULL,
-            calculated_speed REAL, -- Vitesse calculée ajoutée
+            calculated_speed REAL,
             trajetId INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (trajetId) REFERENCES trajets(id) ON DELETE CASCADE
@@ -45,7 +43,7 @@ db.serialize(() => {
         if (err) {
             console.error("Erreur lors de la création de la table coordonnee:", err.message);
         } else {
-            console.log("Table coordonnee prête avec vitesse calculée.");
+            console.log("Table coordonnee créée avec succès.");
         }
     });
 });
