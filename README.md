@@ -25,21 +25,11 @@
    - Gère la configuration de la base de données et d'autres paramètres importants pour l'application.
    - Utilisé pour définir les paramètres de connexion à la base de données MongoDB.
 
-### 4. **`models/sensorData.js`**
-   - Définit le modèle de données pour les capteurs en utilisant Mongoose.
-   - Spécifie la structure des données qui seront stockées dans MongoDB, telles que les axes X, Y, Z, la latitude, la longitude, et la vitesse.
+### 4. **`models.js`**
+   - Définit les modèles et schémas de la base de données.
 
-### 5. **`routes/sensorData.js`**
-   - Gère les routes spécifiques pour la manipulation des données des capteurs.
-   - Définit les routes pour l'envoi (`POST`) et la récupération (`GET`) des données via l'API.
-
-### 6. **`public/index.html`**
-   - Page HTML pour envoyer des données de capteur à l'API.
-   - Permet aux utilisateurs d'entrer manuellement les valeurs des capteurs et de les envoyer au serveur.
-
-### 7. **`public/get-data.html`**
-   - Page HTML pour récupérer et afficher les données de capteur depuis l'API.
-   - Affiche les données stockées dans la base de données dans un tableau ou une autre interface visuelle.
+### 5. **`database.js`**
+   - Configuration et connexion à la base de données. 
 
 ## Installation
 
@@ -57,10 +47,7 @@ Pour installer et exécuter ce projet localement :
    ```bash
    npm install
 
-4. Configurer la Base de Données
-Vous pouvez configurer les paramètres de la base de données dans le fichier config.js. Assurez-vous que MongoDB est installé et en cours d'exécution sur votre machine ou utilisez un service MongoDB hébergé comme MongoDB Atlas.
-   
-5. Lancez le serveur :
+4. Lancez le serveur :
    ```bash
    npm start
 
