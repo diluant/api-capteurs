@@ -72,10 +72,17 @@ app.get('/api/trajets/:id/sensor-data', async (req, res) => {
 // Réinitialiser la base de données
 app.post('/api/reset-database', (req, res) => {
     if (fs.existsSync('./database.sqlite')) fs.unlinkSync('./database.sqlite');
-    Coordonnee.initialize(db);
-    Trajet.initialize(db);
-    res.status(200).json({ message: 'Base de données réinitialisée.' });
+    const db = new sqlite3.Database('./database.sqlite', (err) => {
+        if (err) {
+            console.error('Erreur lors de la création de la base de données:', err.message);
+            return res.status(500).json({ error: 'Erreur lors de la création de la base de données.' });
+        }
+        Coordonnee.initialize(db);
+        Trajet.initialize(db);
+        res.status(200).json({ message: 'Base de données réinitialisée avec succès.' });
+    });
 });
+
 
 // Serveur
 app.listen(port, () => console.log(`API en écoute sur le port ${port}`));
