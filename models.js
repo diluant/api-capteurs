@@ -22,13 +22,14 @@ class Coordonnee {
                 longitude REAL NOT NULL,
                 speed REAL NOT NULL,
                 trajetId INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (trajetId) REFERENCES trajets(id) ON DELETE CASCADE
             );
         `, (err) => {
             if (err) {
                 console.error("Erreur lors de la création de la table sensor_data:", err.message);
             } else {
-                console.log("Table sensor_data prête.");
+                console.log("Table sensor_data prête avec timestamps.");
             }
         });
     }
@@ -54,7 +55,7 @@ class Coordonnee {
     static getAll() {
         return new Promise((resolve, reject) => {
             const db = new sqlite3.Database('./database.sqlite');
-            db.all(`SELECT * FROM sensor_data`, [], (err, rows) => {
+            db.all(`SELECT id, x, y, z, latitude, longitude, speed, trajetId, created_at FROM sensor_data`, [], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -69,7 +70,7 @@ class Coordonnee {
         return new Promise((resolve, reject) => {
             const db = new sqlite3.Database('./database.sqlite');
             db.all(
-                `SELECT * FROM sensor_data WHERE trajetId = ?`,
+                `SELECT id, x, y, z, latitude, longitude, speed, created_at FROM sensor_data WHERE trajetId = ?`,
                 [trajetId],
                 (err, rows) => {
                     if (err) {
@@ -94,31 +95,47 @@ class Trajet {
         db.run(`
             CREATE TABLE IF NOT EXISTS trajets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL
+                name TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                ended_at DATETIME
             );
         `, (err) => {
             if (err) {
                 console.error("Erreur lors de la création de la table trajets:", err.message);
             } else {
-                console.log("Table trajets prête.");
+                console.log("Table trajets prête avec timestamps.");
             }
         });
     }
 
-    save() {
+    save(end = false) {
         return new Promise((resolve, reject) => {
             const db = new sqlite3.Database('./database.sqlite');
-            db.run(
-                `INSERT INTO trajets (name) VALUES (?)`,
-                [this.name],
-                function (err) {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve({ id: this.lastID, ...this });
+            if (end) {
+                db.run(
+                    `UPDATE trajets SET ended_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    [this.id],
+                    function (err) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve({ id: this.id, ...this });
+                        }
                     }
-                }
-            );
+                );
+            } else {
+                db.run(
+                    `INSERT INTO trajets (name) VALUES (?)`,
+                    [this.name],
+                    function (err) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve({ id: this.lastID, ...this });
+                        }
+                    }
+                );
+            }
             db.close();
         });
     }
@@ -126,7 +143,7 @@ class Trajet {
     static getAll() {
         return new Promise((resolve, reject) => {
             const db = new sqlite3.Database('./database.sqlite');
-            db.all(`SELECT * FROM trajets`, [], (err, rows) => {
+            db.all(`SELECT id, name, created_at, ended_at FROM trajets`, [], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
