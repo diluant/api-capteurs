@@ -22,7 +22,7 @@ class Coordonnee {
                 latitude REAL NOT NULL,
                 longitude REAL NOT NULL,
                 speed REAL NOT NULL,
-                calculated_speed REAL, -- Vitesse calculée ajoutée
+                calculated_speed REAL,
                 trajetId INTEGER,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (trajetId) REFERENCES trajets(id) ON DELETE CASCADE
@@ -31,7 +31,7 @@ class Coordonnee {
             if (err) {
                 console.error("Erreur lors de la création de la table coordonnee:", err.message);
             } else {
-                console.log("Table coordonnee prête avec vitesse calculée.");
+                console.log("Table coordonnee prête.");
             }
         });
     }
@@ -47,24 +47,6 @@ class Coordonnee {
                         reject(err);
                     } else {
                         resolve({ id: this.lastID, ...this });
-                    }
-                }
-            );
-            db.close();
-        });
-    }
-
-    static getAll() {
-        return new Promise((resolve, reject) => {
-            const db = new sqlite3.Database('./database.sqlite');
-            db.all(
-                `SELECT id, x, y, z, latitude, longitude, speed, calculated_speed, trajetId, created_at FROM coordonnee`,
-                [],
-                (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(rows);
                     }
                 }
             );
@@ -109,7 +91,7 @@ class Trajet {
             if (err) {
                 console.error("Erreur lors de la création de la table trajets:", err.message);
             } else {
-                console.log("Table trajets prête avec timestamps.");
+                console.log("Table trajets prête.");
             }
         });
     }
@@ -125,7 +107,7 @@ class Trajet {
                         if (err) {
                             reject(err);
                         } else {
-                            resolve({ id: this.id, ...this });
+                            resolve({ id: this.id, ended_at: new Date().toISOString() });
                         }
                     }
                 );
