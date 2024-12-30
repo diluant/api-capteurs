@@ -69,6 +69,28 @@ app.get('/api/trajets/:id/sensor-data', async (req, res) => {
     }
 });
 
+app.patch('/api/trajets/:id/terminate', async (req, res) => {
+    const { id } = req.params;
+    const db = new sqlite3.Database('./database.sqlite');
+
+    db.run(
+        `UPDATE trajets SET ended_at = datetime('now') WHERE id = ?`,
+        [id],
+        function (err) {
+            if (err) {
+                console.error("Erreur lors de la mise à jour de ended_at :", err.message);
+                res.status(500).json({ error: "Erreur lors de la mise à jour du trajet." });
+            } else if (this.changes === 0) {
+                res.status(404).json({ error: "Trajet non trouvé." });
+            } else {
+                res.status(200).json({ message: "Trajet terminé avec succès." });
+            }
+        }
+    );
+
+    db.close();
+});
+
 // Réinitialiser la base de données
 app.post('/api/reset-database', (req, res) => {
     if (fs.existsSync('./database.sqlite')) fs.unlinkSync('./database.sqlite');
