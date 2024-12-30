@@ -1,19 +1,20 @@
 const sqlite3 = require('sqlite3').verbose();
 
 class Coordonnee {
-    constructor(x, y, z, latitude, longitude, speed, trajetId) {
+    constructor(x, y, z, latitude, longitude, speed, trajetId, calculatedSpeed = null) {
         this.x = x;
         this.y = y;
         this.z = z;
         this.latitude = latitude;
         this.longitude = longitude;
         this.speed = speed;
+        this.calculatedSpeed = calculatedSpeed; // Vitesse calculée
         this.trajetId = trajetId; // Clé étrangère
     }
 
     static initialize(db) {
         db.run(`
-            CREATE TABLE IF NOT EXISTS sensor_data (
+            CREATE TABLE IF NOT EXISTS coordonnee (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 x REAL NOT NULL,
                 y REAL NOT NULL,
@@ -21,15 +22,16 @@ class Coordonnee {
                 latitude REAL NOT NULL,
                 longitude REAL NOT NULL,
                 speed REAL NOT NULL,
+                calculated_speed REAL, -- Vitesse calculée ajoutée
                 trajetId INTEGER,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (trajetId) REFERENCES trajets(id) ON DELETE CASCADE
             );
         `, (err) => {
             if (err) {
-                console.error("Erreur lors de la création de la table sensor_data:", err.message);
+                console.error("Erreur lors de la création de la table coordonnee:", err.message);
             } else {
-                console.log("Table sensor_data prête avec timestamps.");
+                console.log("Table coordonnee prête avec vitesse calculée.");
             }
         });
     }
@@ -38,8 +40,8 @@ class Coordonnee {
         return new Promise((resolve, reject) => {
             const db = new sqlite3.Database('./database.sqlite');
             db.run(
-                `INSERT INTO sensor_data (x, y, z, latitude, longitude, speed, trajetId) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [this.x, this.y, this.z, this.latitude, this.longitude, this.speed, this.trajetId],
+                `INSERT INTO coordonnee (x, y, z, latitude, longitude, speed, calculated_speed, trajetId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [this.x, this.y, this.z, this.latitude, this.longitude, this.speed, this.calculatedSpeed, this.trajetId],
                 function (err) {
                     if (err) {
                         reject(err);
@@ -55,13 +57,17 @@ class Coordonnee {
     static getAll() {
         return new Promise((resolve, reject) => {
             const db = new sqlite3.Database('./database.sqlite');
-            db.all(`SELECT id, x, y, z, latitude, longitude, speed, trajetId, created_at FROM sensor_data`, [], (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows);
+            db.all(
+                `SELECT id, x, y, z, latitude, longitude, speed, calculated_speed, trajetId, created_at FROM coordonnee`,
+                [],
+                (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows);
+                    }
                 }
-            });
+            );
             db.close();
         });
     }
@@ -70,7 +76,7 @@ class Coordonnee {
         return new Promise((resolve, reject) => {
             const db = new sqlite3.Database('./database.sqlite');
             db.all(
-                `SELECT id, x, y, z, latitude, longitude, speed, created_at FROM sensor_data WHERE trajetId = ?`,
+                `SELECT id, x, y, z, latitude, longitude, speed, calculated_speed, created_at FROM coordonnee WHERE trajetId = ?`,
                 [trajetId],
                 (err, rows) => {
                     if (err) {
