@@ -114,6 +114,37 @@ app.get('/api/trajets', async (req, res) => {
     }
 });
 
+// Route pour réinitialiser la base de données
+app.post('/api/reset-database', (req, res) => {
+    const db = new sqlite3.Database('./database.sqlite');
+
+    db.serialize(() => {
+        // Supprimer les tables existantes
+        db.run(`DROP TABLE IF EXISTS coordonnee`, (err) => {
+            if (err) {
+                console.error("Erreur lors de la suppression de la table coordonnee :", err.message);
+            }
+        });
+        db.run(`DROP TABLE IF EXISTS trajets`, (err) => {
+            if (err) {
+                console.error("Erreur lors de la suppression de la table trajets :", err.message);
+            }
+        });
+
+        // Réinitialiser les tables
+        Trajet.initialize(db);
+        Coordonnee.initialize(db);
+
+        res.status(200).json({ message: 'Base de données réinitialisée avec succès.' });
+    });
+
+    db.close();
+});
+
+app.listen(port, () => {
+    console.log(`Serveur API en écoute sur le port ${port}`);
+});
+
 app.get('/', (req, res) => {
     res.send('Bienvenue à l\'API des capteurs ! Utilisez les endpoints /api/sensor-data ou /api/trajets.');
 });
