@@ -114,31 +114,52 @@ app.get('/api/trajets', async (req, res) => {
     }
 });
 
-// Route pour réinitialiser la base de données
 app.post('/api/reset-database', (req, res) => {
-    const db = new sqlite3.Database('./database.sqlite');
+    const fs = require('fs');
 
-    db.serialize(() => {
-        // Supprimer les tables existantes
-        db.run(`DROP TABLE IF EXISTS coordonnee`, (err) => {
-            if (err) {
-                console.error("Erreur lors de la suppression de la table coordonnee :", err.message);
-            }
+    // Supprimer la base de données si le fichier existe
+    if (fs.existsSync('./database.sqlite')) {
+        fs.unlinkSync('./database.sqlite');
+        console.log('Base de données supprimée.');
+    }
+
+    // Recréer la base de données et initialiser les tables
+    const db = new sqlite3.Database('./database.sqlite', (err) => {
+        if (err) {
+            console.error('Erreur lors de la création de la base de données:', err.message);
+            return res.status(500).json({ error: 'Erreur lors de la création de la base de données.' });
+        }
+
+        db.serialize(() => {
+            db.run(`
+                CREATE TABLE IF NOT EXISTS trajets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    ended_at DATETIME
+                );
+            `);
+            db.run(`
+                CREATE TABLE IF NOT EXISTS coordonnee (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    x REAL NOT NULL,
+                    y REAL NOT NULL,
+                    z REAL NOT NULL,
+                    latitude REAL NOT NULL,
+                    longitude REAL NOT NULL,
+                    speed REAL NOT NULL,
+                    calculated_speed REAL,
+                    trajetId INTEGER,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (trajetId) REFERENCES trajets(id) ON DELETE CASCADE
+                );
+            `);
+
+            res.status(200).json({ message: 'Base de données réinitialisée avec succès.' });
         });
-        db.run(`DROP TABLE IF EXISTS trajets`, (err) => {
-            if (err) {
-                console.error("Erreur lors de la suppression de la table trajets :", err.message);
-            }
-        });
 
-        // Réinitialiser les tables
-        Trajet.initialize(db);
-        Coordonnee.initialize(db);
-
-        res.status(200).json({ message: 'Base de données réinitialisée avec succès.' });
+        db.close();
     });
-
-    db.close();
 });
 
 // Route to reset the database
