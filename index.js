@@ -1,9 +1,7 @@
-require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const sqlite3 = require('sqlite3').verbose();
 const { Coordonnee, Trajet } = require('./models');
 const fs = require('fs');
@@ -11,98 +9,73 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configuration pour les proxys
-app.set('trust proxy', true);
-
-// Initialiser la base de données
-const db = new sqlite3.Database('./database.sqlite', (err) => {
-    if (err) {
-        console.error('Erreur lors de la connexion à SQLite:', err.message);
-    } else {
-        console.log('Connexion à SQLite réussie.');
-    }
-});
-
-Coordonnee.initialize(db);
-Trajet.initialize(db);
-
-// Middleware de sécurité
+// Middleware
 app.use(helmet());
-app.use(rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limite à 100 requêtes par IP
-    message: "Trop de requêtes, réessayez plus tard."
-}));
-
-// Middleware pour CORS et parsing
 app.use(cors());
 app.use(bodyParser.json());
 
-// POST pour sauvegarder une coordonnée
-app.post('/api/sensor-data', async (req, res) => {
-    const { x, y, z, latitude, longitude, speed, trajetId } = req.body;
+// Initialisation de la base de données
+const db = new sqlite3.Database('./database.sqlite', (err) => {
+    if (err) console.error('Erreur lors de la connexion à SQLite:', err.message);
+    else console.log('Connexion à SQLite réussie.');
+});
+Coordonnee.initialize(db);
+Trajet.initialize(db);
 
-    if ([x, y, z, latitude, longitude, speed, trajetId].some(v => v == null)) {
-        return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
-    }
+// Routes API
+app.post('/api/trajets', async (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'Nom obligatoire' });
 
     try {
-        const coordonnee = new Coordonnee(x, y, z, latitude, longitude, speed, trajetId);
-        const savedCoord = await coordonnee.save();
-        res.status(200).json({ message: 'Coordonnée enregistrée avec succès', data: savedCoord });
+        const trajet = new Trajet(null, name);
+        const result = await trajet.save();
+        res.status(200).json(result);
     } catch (err) {
-        console.error("Erreur lors de l'enregistrement :", err);
-        res.status(500).json({ error: 'Erreur lors de l’enregistrement des données' });
+        res.status(500).json({ error: 'Erreur lors de la création du trajet.' });
     }
 });
 
-// POST pour réinitialiser la base de données
+app.get('/api/trajets', async (req, res) => {
+    try {
+        const trajets = await Trajet.getAll();
+        res.status(200).json(trajets);
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur lors de la récupération des trajets.' });
+    }
+});
+
+app.post('/api/sensor-data', async (req, res) => {
+    const { x, y, z, latitude, longitude, speed, calculatedSpeed, trajetId } = req.body;
+    if ([x, y, z, latitude, longitude, speed, trajetId].some(v => v == null))
+        return res.status(400).json({ error: 'Tous les champs sont obligatoires.' });
+
+    try {
+        const coord = new Coordonnee(x, y, z, latitude, longitude, speed, trajetId, calculatedSpeed);
+        const result = await coord.save();
+        res.status(200).json(result);
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur lors de l\'enregistrement des données.' });
+    }
+});
+
+app.get('/api/trajets/:id/sensor-data', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const coords = await Coordonnee.getAllByTrajetId(id);
+        res.status(200).json(coords);
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur lors de la récupération des données.' });
+    }
+});
+
+// Réinitialiser la base de données
 app.post('/api/reset-database', (req, res) => {
-    // Supprimer la base de données si elle existe
-    if (fs.existsSync('./database.sqlite')) {
-        fs.unlinkSync('./database.sqlite');
-        console.log('Base de données supprimée.');
-    }
-
-    // Recréer la base de données
-    const db = new sqlite3.Database('./database.sqlite', (err) => {
-        if (err) {
-            console.error('Erreur lors de la création de la base de données:', err.message);
-            return res.status(500).json({ error: 'Erreur lors de la création de la base de données.' });
-        }
-
-        db.serialize(() => {
-            db.run(`
-                CREATE TABLE IF NOT EXISTS trajets (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    ended_at DATETIME
-                );
-            `);
-            db.run(`
-                CREATE TABLE IF NOT EXISTS coordonnee (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    x REAL NOT NULL,
-                    y REAL NOT NULL,
-                    z REAL NOT NULL,
-                    latitude REAL NOT NULL,
-                    longitude REAL NOT NULL,
-                    speed REAL NOT NULL,
-                    calculated_speed REAL,
-                    trajetId INTEGER,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (trajetId) REFERENCES trajets(id) ON DELETE CASCADE
-                );
-            `);
-            res.status(200).json({ message: 'Base de données réinitialisée avec succès.' });
-        });
-
-        db.close();
-    });
+    if (fs.existsSync('./database.sqlite')) fs.unlinkSync('./database.sqlite');
+    Coordonnee.initialize(db);
+    Trajet.initialize(db);
+    res.status(200).json({ message: 'Base de données réinitialisée.' });
 });
 
-// API en écoute
-app.listen(port, () => {
-    console.log(`API en écoute sur le port ${port}`);
-});
+// Serveur
+app.listen(port, () => console.log(`API en écoute sur le port ${port}`));
